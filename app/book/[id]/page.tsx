@@ -1,7 +1,8 @@
 import Image from 'next/image';
-import { BookData } from '@/app/types/types';
+import { BookData, ReviewData } from '@/app/types/types';
 import { notFound } from 'next/navigation';
-import { createReviewAction } from '@/app/actions/create-review.action';
+import ReviewItem from '@/app/components/review-item';
+import ReviewEditor from '@/app/components/review-editor';
 
 // 동적페이지가 아래에서 정한 1,2,3 이 아닐경우 모드 notfound 페이지로 이동
 // export const dynamicParams = false;
@@ -57,41 +58,23 @@ async function BookDetail({ bookId }: { bookId: string }) {
   );
 }
 
-function ReviewEditor({ bookId }: { bookId: string }) {
+async function ReviewList({ bookId }: { bookId: string }) {
+  const response = await fetch(
+    `${process.env.NEXT_PUBLIC_API_SERVER_URL}/review/book/${bookId}`,
+    {
+      next: { tags: [`reviews-${bookId}`] },
+    }
+  );
+  if (!response.ok) {
+    throw new Error(`Failed to fetch reviews: ${response.statusText}`);
+  }
+  const reviews: ReviewData[] = await response.json();
   return (
-    <div className='mx-auto p-4 space-y-4'>
-      <h2 className='text-xl font-bold'>Review Editor</h2>
-      <form className='space-y-4' action={createReviewAction}>
-        <input
-          required
-          type='text'
-          name='bookId'
-          value={bookId}
-          hidden
-          readOnly
-        />
-        <input
-          required
-          type='text'
-          name='content'
-          placeholder='Review....'
-          className='w-full p-2 rounded-md border border-gray-300'
-        />
-        <input
-          required
-          type='text'
-          name='author'
-          placeholder='Author...'
-          className='w-full p-2 rounded-md border border-gray-300'
-        />
-        <button
-          type='submit'
-          className='bg-blue-500 text-white px-4 py-2 rounded-md whitespace-nowrap'
-        >
-          Submit
-        </button>
-      </form>
-    </div>
+    <section>
+      {reviews.map((review) => (
+        <ReviewItem key={review.id} {...review} />
+      ))}
+    </section>
   );
 }
 
@@ -105,6 +88,7 @@ export default async function BookEachPage({
     <div className='container mx-auto p-4 min-h-screen'>
       <BookDetail bookId={id} />
       <ReviewEditor bookId={id} />
+      <ReviewList bookId={id} />
     </div>
   );
 }
